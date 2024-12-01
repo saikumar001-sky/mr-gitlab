@@ -9,13 +9,22 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onCommand:mr-gitlab.start",
+    "onCommand:mr-gitlab.stop"
+  ],
   "main": "./extension.js",
   "contributes": {
-    "commands": [{
-      "command": "mr-gitlab.helloWorld",
-      "title": "Hello World"
-    }]
+    "commands": [
+      {
+        "command": "mr-gitlab.start",
+        "title": "start MRGitlab"
+      },
+      {
+        "command": "mr-gitlab.stop",
+        "title": "stop MRGitlab"
+      }
+    ]
   },
   "scripts": {
     "lint": "eslint .",

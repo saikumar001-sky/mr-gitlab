@@ -1,36 +1,53 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
+const axios = require('axios');
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+let timer;
 
-/**
- * @param {vscode.ExtensionContext} context
- */
 function activate(context) {
+  console.log('GitLab MR Alert extension is active.');
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "mr-gitlab" is now active!');
+  const startCommand = vscode.commands.registerCommand('mr-gitlab.start', () => {
+    vscode.window.showInformationMessage('GitLab MR Alert started.');
+    
+    timer = setInterval(async () => {
+      const mergeRequests = await getMergeRequests();
+      mergeRequests.forEach(mr => showNotification(mr));
+    }, 2000); // Poll every minute
+  });
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with  registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('mr-gitlab.helloWorld', function () {
-		// The code you place here will be executed every time your command is executed
+  const stopCommand = vscode.commands.registerCommand('mr-gitlab.stop', () => {
+    clearInterval(timer);
+    vscode.window.showInformationMessage('GitLab MR Alert stopped.');
+  });
 
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from MR.gitlab!');
-	});
-
-	context.subscriptions.push(disposable);
+  context.subscriptions.push(startCommand, stopCommand);
 }
 
-// This method is called when your extension is deactivated
-function deactivate() {}
-
-module.exports = {
-	activate,
-	deactivate
+function deactivate() {
+  clearInterval(timer);
 }
+
+const getMergeRequests = async () => {
+  try {
+    const response = await axios.get('http://gitlab.softdevels.com/api/v4/merge_requests', {
+      headers: { 'Authorization': `Bearer glpat-gZptXjzSAZEnpsBUqkMz` }
+    });
+    return response.data.filter(mr => mr.state === 'opened'); // Only open MRs
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};
+
+const showNotification = (mr) => {
+  vscode.window.showInformationMessage(`New Merge Request: ${mr.title}`, 'View', 'Ignore')
+    .then(selection => {
+		console.log("mr=====>",mr)
+      if (selection === 'View') {
+		
+        vscode.env.openExternal(vscode.Uri.parse(mr.web_url));
+      }
+    });
+};
+
+module.exports = { activate, deactivate };
